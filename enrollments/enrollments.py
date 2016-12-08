@@ -23,6 +23,7 @@ CATALOG_API_URL = os.environ['CATALOG_API_URL']
 
 QUESTION_KEY = 'QUESTION'
 ENROLLMENTS_KEY = 'ENROLLMENTS'
+SEARCH_KEY = 'SEARCH'
 
 
 class APIError(Exception):
@@ -142,6 +143,7 @@ def enrollments():
             count=enrollment_count, word=word)
 
         session.attributes[ENROLLMENTS_KEY] = _enrollments
+        session.attributes[QUESTION_KEY] = 'enrollments'
 
         return question(speech_text).reprompt(speech_text).simple_card(APP_NAME, speech_text)
     else:
@@ -203,11 +205,20 @@ def continue_interaction():
     if session.new:
         return help()
 
-    speech_text = '<speak><p>Your courses include</p>'
-    _enrollments = get_course_names(session.attributes[ENROLLMENTS_KEY])
+    question_key = session.attributes[QUESTION_KEY]
 
-    for enrollment in _enrollments.values():
-        speech_text += '<p>{}</p>'.format(enrollment['title'])
+    if question_key == 'enrollments':
+        speech_text = '<speak><p>Your courses include</p>'
+        _enrollments = get_course_names(session.attributes[ENROLLMENTS_KEY])
+
+        for enrollment in _enrollments.values():
+            speech_text += '<p>{}</p>'.format(enrollment['title'])
+
+    elif question_key == 'search':
+        courses = session.attributes[SEARCH_KEY]
+        speech_text = '<speak><p>The rest of the results are </p>'
+        for course in courses:
+            speech_text += '<p>{}</p>'.format(course['title'])
 
     reprompt = 'How else may I assist you?'
     speech_text += '{}</speak>'.format(reprompt)
@@ -267,16 +278,29 @@ def search(subject):
     if count <= 0:
         speech_text = 'I found no courses about {subject}'.format(subject=subject)
     else:
-        word = 'course about {subject}. It is' if count == 1 else 'courses about {subject}. They are'
+        if count == 1:
+            word = 'course about {subject}. It is'
+        elif count == 2:
+            word = 'courses about {subject}. Here they are'
+        else:
+            word = 'courses about {subject}. Here are the first two'
+
         word = word.format(subject=subject)
         speech_text = '<speak><p>I found {count} {word}</p>'.format(count=count, word=word)
 
-        for course in courses:
+        for course in courses[:2]:
             speech_text += '<p>{}</p>'.format(course['title'])
 
-        speech_text += '</speak>'
+        if len(courses) == 2:
+            speech_text += '</speak>'
+            return statement(speech_text).simple_card(APP_NAME, speech_text)
+        else:
+            speech_text += '<p>Would you like to hear the rest?</p></speak>'
+            reprompt = 'Would you like to hear the rest of the results?'
+            session.attributes[QUESTION_KEY] = 'search'
+            session.attributes[SEARCH_KEY] = courses[2:]
+            return question(speech_text).reprompt(reprompt).simple_card(APP_NAME, speech_text)
 
-    return statement(speech_text).simple_card(APP_NAME, speech_text)
 
 
 @ask.intent('AMAZON.HelpIntent')
