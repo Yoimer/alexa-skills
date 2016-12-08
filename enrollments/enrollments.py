@@ -219,7 +219,8 @@ def list_enrollments():
     if user_access_token():
         try:
             _enrollments = get_enrollments()
-            _enrollments = get_course_names(_enrollments)
+            if _enrollments:
+                _enrollments = get_course_names(_enrollments)
         except APIError:
             speech_text = 'An error occurred while contacting the {} server. Please try again.'.format(SPOKEN_NAME)
             return statement(speech_text).simple_card(APP_NAME, speech_text)
