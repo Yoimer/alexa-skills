@@ -88,7 +88,19 @@ def get_course_names(_enrollments):
     return _enrollments
 
 
+def search_catalog_starting_soon():
+
+    kwargs = {
+        'partner': 'edx',
+        'page': 1,
+        'page_size': 10,
+        'selected_query_facets': 'availability_starting_soon',
+    }
+    return catalog_api_client().search.course_runs.facets.get(**kwargs)['objects']['results']
+
+
 def search_catalog(query):
+
     kwargs = {
         'partner': 'edx',
         'end__gt': 'now',
@@ -270,6 +282,38 @@ def about():
     return question(speech_text).reprompt(reprompt).simple_card(APP_NAME, speech_text)
 
 
+@ask.intent('EdXStartSoonIntent')
+def searchStartSoon():
+    courses = search_catalog_starting_soon()
+    count = len(courses)
+
+    if not count:
+        speech_text = 'There are no courses starting within the next two weeks.'
+        return statement(speech_text)
+
+    if count == 1:
+        word = 'It is '
+    elif count == 2:
+        word = 'They are '
+    else:
+        word = 'The first two are '
+
+    speech_text = '<speak><p>I found {count} courses starting soon</p> {word}'.format(count=count, word=word)
+
+    for course in courses[:2]:
+        speech_text += '<p>{}</p>'.format(course['title'])
+
+    if len(courses) <= 2:
+        speech_text += '</speak>'
+        return statement(speech_text).simple_card(APP_NAME, speech_text)
+    else:
+        speech_text += '<p>Would you like to hear the rest?</p></speak>'
+        reprompt = 'Would you like to hear the rest of the results?'
+        session.attributes[QUESTION_KEY] = 'search'
+        session.attributes[SEARCH_KEY] = courses[2:]
+        return question(speech_text).reprompt(reprompt).simple_card(APP_NAME, speech_text)
+
+
 @ask.intent('EdXSearchIntent', mapping={'subject': 'Subject'})
 def search(subject):
     courses = search_catalog(subject)
@@ -291,7 +335,7 @@ def search(subject):
         for course in courses[:2]:
             speech_text += '<p>{}</p>'.format(course['title'])
 
-        if len(courses) == 2:
+        if len(courses) <= 2:
             speech_text += '</speak>'
             return statement(speech_text).simple_card(APP_NAME, speech_text)
         else:
@@ -300,7 +344,6 @@ def search(subject):
             session.attributes[QUESTION_KEY] = 'search'
             session.attributes[SEARCH_KEY] = courses[2:]
             return question(speech_text).reprompt(reprompt).simple_card(APP_NAME, speech_text)
-
 
 
 @ask.intent('AMAZON.HelpIntent')

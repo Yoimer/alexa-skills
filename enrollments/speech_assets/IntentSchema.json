@@ -22,6 +22,9 @@
       "intent": "EdXContinueIntent"
     },
     {
+      "intent": "EdXStartSoonIntent"
+    },
+    {
       "intent": "EdXSearchIntent",
       "slots": [
         {

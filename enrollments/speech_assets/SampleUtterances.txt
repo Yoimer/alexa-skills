@@ -25,3 +25,11 @@ EdXSearchIntent courses on {Subject}
 EdXSearchIntent courses about {Subject}
 EdXSearchIntent search for courses about {Subject}
 EdXSearchIntent search for courses on {Subject}
+EdXStartSoonIntent find courses that are starting soon
+EdXStartSoonIntent find courses that are starting shortly
+EdXStartSoonIntent search for courses that are starting soon
+EdXStartSoonIntent search for courses that are starting shortly
+EdXStartSoonIntent what courses are starting soon
+EdXStartSoonIntent which courses are starting soon
+EdXStartSoonIntent what courses are starting shortly
+EdXStartSoonIntent which courses are starting shortly
